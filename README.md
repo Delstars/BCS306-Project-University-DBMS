@@ -66,9 +66,8 @@ Every other added value is marked in `03_seed.sql`. Reset by rerunning the setup
 
 | File | Purpose |
 |---|---|
-| `app/main.py` | Tkinter login, tabs, forms, lists, search, reports, and error dialogs |
-| `app/db.py` | `mysql.connector` connection, parameterized SQL, `callproc`, commit/rollback |
-| `app/test_connection.py` | Lab 10-style credential/connection test |
+| `app/main.py` | Lab 10-style procedural Tkinter login, role-specific menus, forms, searches, report text area and error dialogs |
+| `app/test_connection.py` | Lab 10-style direct mysql.connector credential/connection test |
 | `docs/ERD.md` + `docs/ERD.dot` | GitHub-renderable Mermaid overview and detailed Graphviz source (`dot -Tpng docs/ERD.dot -o ERD.png`) |
 | `docs/PROJECT_TASKS_1_TO_5.md` | Model analysis, 3NF design, implementation, evaluation, and report content |
 | `docs/EXPECTED_BASELINE_REPORT.csv` | **Predicted** report rows computed from seed data (not a captured MySQL output) |
@@ -90,7 +89,7 @@ Every other added value is marked in `03_seed.sql`. Reset by rerunning the setup
 
 **Registration Officer**: add student, add phone number, register a student and change a registration status. Try a duplicate registration: a database error appears. The Results and Audit tabs are not available.
 
-**Report User**: view approved registration details and capacity, then run `Fall / 2026` advanced performance report. No write tabs are available. An attempted direct MySQL `INSERT` must be refused by grants.
+**Report User**: view approved registration details and capacity, then run `Fall / 2026` advanced performance report. No write actions are displayed. An attempted direct MySQL `INSERT` must be refused by grants.
 
 For marking, rerun a fresh setup, take screenshot evidence **before modifying data**, and then perform the controlled test scenarios in `06_demo_tests.sql`. Never state that a test passed unless you actually ran it against your MySQL instance.
 
@@ -104,4 +103,4 @@ For marking, rerun a fresh setup, take screenshot evidence **before modifying da
 
 ## What has and has not been verified here
 
-The original Python application files passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. **Live MySQL execution has not been confirmed in this audit environment.** Run the all-in-one setup, `07_assert_baseline.sql`, all role checks, and the Fall 2026 report locally before claiming a successful database demonstration. Capture Workbench and GUI test evidence for submission.
+The previous Python app was syntax-compiled; the current simplified GitHub revision has not been executed in this environment, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT and a GitHub-renderable Mermaid page. **Live MySQL execution has not been confirmed in this audit environment.** Run the all-in-one setup, `07_assert_baseline.sql`, all role checks, and the Fall 2026 report locally before claiming a successful database demonstration. Capture Workbench and GUI test evidence for submission.
