@@ -182,16 +182,17 @@ BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN ROLLBACK; RESIGNAL; END;
     START TRANSACTION;
-    SELECT COUNT(*) INTO v_exists FROM Student WHERE StudentID=p_student;
-    IF v_exists=0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Student does not exist';
-    END IF;
-    -- Lock the parent section first to prevent concurrent overbooking.
+    -- Lock the section before any regular SELECT establishes a read snapshot.
+    -- Otherwise a competing registration could commit while this call waits.
     SELECT MaximumCapacity INTO v_capacity FROM Section
       WHERE CourseCode=p_course AND SectionNo=p_section
         AND Semester=p_semester AND AcademicYear=p_year FOR UPDATE;
     IF v_capacity IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Section does not exist';
+    END IF;
+    SELECT COUNT(*) INTO v_exists FROM Student WHERE StudentID=p_student;
+    IF v_exists=0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Student does not exist';
     END IF;
     SELECT COUNT(*) INTO v_exists FROM Registration
       WHERE StudentID=p_student AND CourseCode=p_course AND SectionNo=p_section
@@ -216,14 +217,20 @@ END//
 CREATE PROCEDURE ChangeRegistrationStatus(IN p_id INT,IN p_status VARCHAR(20))
 BEGIN
     DECLARE v_exists INT DEFAULT 0;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN ROLLBACK; RESIGNAL; END;
     IF p_status NOT IN ('Registered','Dropped') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Use CompleteRegistration to set Completed';
     END IF;
+    START TRANSACTION;
+    -- UPDATE invokes the capacity-checking trigger first; there is no
+    -- earlier ordinary SELECT that could establish a stale snapshot.
+    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
     SELECT COUNT(*) INTO v_exists FROM Registration WHERE RegistrationID=p_id;
     IF v_exists=0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
     END IF;
-    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
+    COMMIT;
 END//
 
 CREATE PROCEDURE SetFinalMark(IN p_id INT,IN p_mark DECIMAL(5,2))
