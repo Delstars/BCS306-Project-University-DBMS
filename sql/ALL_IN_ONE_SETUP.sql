@@ -2,7 +2,7 @@
 -- WARNING: This script RESETS ONLY the dedicated UniversityProject1DB database.
 -- Do not run against an existing database containing work you need to keep.
 DROP DATABASE IF EXISTS UniversityProject1DB;
-CREATE DATABASE UniversityProject1DB CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE UniversityProject1DB;
 USE UniversityProject1DB;
 
 -- ChairID FK is added after initial data is loaded because of the circular
@@ -12,7 +12,7 @@ CREATE TABLE Department (
     DeptName VARCHAR(100) NOT NULL UNIQUE,
     Office VARCHAR(30) NOT NULL,
     ChairID INT UNIQUE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Instructor (
     InstructorID INT PRIMARY KEY,
@@ -26,7 +26,7 @@ CREATE TABLE Instructor (
     CONSTRAINT UQ_Instructor_Dept UNIQUE (InstructorID, DeptCode),
     CONSTRAINT FK_Instructor_Department FOREIGN KEY (DeptCode)
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Student (
     StudentID INT PRIMARY KEY,
@@ -35,7 +35,7 @@ CREATE TABLE Student (
     FamilyName VARCHAR(50) NOT NULL,
     DateOfBirth DATE NOT NULL,
     Email VARCHAR(120) NOT NULL UNIQUE,
-    AdmissionYear SMALLINT NOT NULL,
+    AdmissionYear INT NOT NULL,
     StudentStatus VARCHAR(20) NOT NULL DEFAULT 'Active',
     Street VARCHAR(100),
     City VARCHAR(60),
@@ -49,7 +49,7 @@ CREATE TABLE Student (
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT FK_Student_Advisor FOREIGN KEY (AdvisorID)
         REFERENCES Instructor(InstructorID) ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE StudentPhone (
     StudentID INT NOT NULL,
@@ -57,13 +57,13 @@ CREATE TABLE StudentPhone (
     CONSTRAINT PK_StudentPhone PRIMARY KEY (StudentID, PhoneNumber),
     CONSTRAINT FK_StudentPhone_Student FOREIGN KEY (StudentID)
         REFERENCES Student(StudentID) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Course (
     CourseCode VARCHAR(10) PRIMARY KEY,
     CourseTitle VARCHAR(150) NOT NULL,
-    Credits TINYINT NOT NULL,
-    AcademicLevel TINYINT NOT NULL,
+    Credits INT NOT NULL,
+    AcademicLevel INT NOT NULL,
     CourseStatus VARCHAR(20) NOT NULL DEFAULT 'Active',
     DeptCode VARCHAR(10) NOT NULL,
     CONSTRAINT CHK_Course_Credits CHECK (Credits BETWEEN 1 AND 6),
@@ -71,7 +71,7 @@ CREATE TABLE Course (
     CONSTRAINT CHK_Course_Status CHECK (CourseStatus IN ('Active', 'Inactive')),
     CONSTRAINT FK_Course_Department FOREIGN KEY (DeptCode)
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE CoursePrerequisite (
     CourseCode VARCHAR(10) NOT NULL,
@@ -81,13 +81,13 @@ CREATE TABLE CoursePrerequisite (
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT FK_Prereq_Required FOREIGN KEY (PrerequisiteCourseCode)
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Section (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     MaximumCapacity INT NOT NULL,
     Classroom VARCHAR(30) NOT NULL,
     DeliveryMode VARCHAR(30) NOT NULL,
@@ -100,14 +100,14 @@ CREATE TABLE Section (
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT FK_Section_Instructor FOREIGN KEY (InstructorID)
         REFERENCES Instructor(InstructorID) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 -- MeetingNo is meaningful only within its parent Section (weak entity).
 CREATE TABLE SectionMeeting (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     MeetingNo INT NOT NULL,
     DayOfWeek VARCHAR(12) NOT NULL,
     StartTime TIME NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE SectionMeeting (
         (CourseCode, SectionNo, Semester, AcademicYear)
         REFERENCES Section(CourseCode, SectionNo, Semester, AcademicYear)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Registration (
     RegistrationID INT AUTO_INCREMENT PRIMARY KEY,
@@ -130,8 +130,8 @@ CREATE TABLE Registration (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
-    RegistrationDate DATE NOT NULL DEFAULT (CURRENT_DATE),
+    AcademicYear INT NOT NULL,
+    RegistrationDate DATE NOT NULL,
     RegistrationStatus VARCHAR(20) NOT NULL DEFAULT 'Registered',
     FinalMark DECIMAL(5,2) NULL,
     CONSTRAINT UQ_Registration_StudentSection UNIQUE
@@ -147,31 +147,32 @@ CREATE TABLE Registration (
         (CourseCode, SectionNo, Semester, AcademicYear)
         REFERENCES Section(CourseCode, SectionNo, Semester, AcademicYear)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 -- Keep a historical snapshot; intentionally NO FK to Registration, since
 -- registration deletion must not delete its audit history.
 CREATE TABLE RegistrationAudit (
-    AuditID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    AuditID INT AUTO_INCREMENT PRIMARY KEY,
     RegistrationID INT NOT NULL,
     StudentID INT NOT NULL,
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     EventType VARCHAR(40) NOT NULL,
     OldStatus VARCHAR(20),
     NewStatus VARCHAR(20),
     OldFinalMark DECIMAL(5,2),
     NewFinalMark DECIMAL(5,2),
     DatabaseUser VARCHAR(288) NOT NULL,
-    EventTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    EventTime DATETIME NOT NULL,
     CONSTRAINT CHK_Audit_Event CHECK (EventType IN (
         'REGISTRATION_CREATED', 'REGISTRATION_STATUS_CHANGED',
         'FINAL_MARK_CHANGED', 'REGISTRATION_DELETED'))
-) ENGINE=InnoDB;
+);
 
 SHOW TABLES;
+
 -- BCS 306 PROJECT 1 | Rules, audit triggers, views, and procedures.
 -- Run after 01_schema.sql and BEFORE 03_seed.sql (seed events are audited).
 USE UniversityProject1DB;
@@ -256,30 +257,32 @@ AFTER INSERT ON Registration FOR EACH ROW
 BEGIN
     INSERT INTO RegistrationAudit
        (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-        EventType,NewStatus,NewFinalMark,DatabaseUser)
+        EventType,NewStatus,NewFinalMark,DatabaseUser,EventTime)
     VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
         NEW.Semester,NEW.AcademicYear,'REGISTRATION_CREATED',
-        NEW.RegistrationStatus,NEW.FinalMark,USER());
+        NEW.RegistrationStatus,NEW.FinalMark,USER(),NOW());
 END//
 
 CREATE TRIGGER trg_registration_after_update
 AFTER UPDATE ON Registration FOR EACH ROW
 BEGIN
-    IF NOT(OLD.RegistrationStatus <=> NEW.RegistrationStatus) THEN
+    IF OLD.RegistrationStatus <> NEW.RegistrationStatus THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser)
+           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
         VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
           NEW.Semester,NEW.AcademicYear,'REGISTRATION_STATUS_CHANGED',
-          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER());
+          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER(),NOW());
     END IF;
-    IF NOT(OLD.FinalMark <=> NEW.FinalMark) THEN
+    IF OLD.FinalMark <> NEW.FinalMark
+       OR (OLD.FinalMark IS NULL AND NEW.FinalMark IS NOT NULL)
+       OR (OLD.FinalMark IS NOT NULL AND NEW.FinalMark IS NULL) THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser)
+           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
         VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
           NEW.Semester,NEW.AcademicYear,'FINAL_MARK_CHANGED',
-          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER());
+          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER(),NOW());
     END IF;
 END//
 
@@ -288,10 +291,10 @@ AFTER DELETE ON Registration FOR EACH ROW
 BEGIN
     INSERT INTO RegistrationAudit
       (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-       EventType,OldStatus,OldFinalMark,DatabaseUser)
+       EventType,OldStatus,OldFinalMark,DatabaseUser,EventTime)
     VALUES (OLD.RegistrationID,OLD.StudentID,OLD.CourseCode,OLD.SectionNo,
        OLD.Semester,OLD.AcademicYear,'REGISTRATION_DELETED',
-       OLD.RegistrationStatus,OLD.FinalMark,USER());
+       OLD.RegistrationStatus,OLD.FinalMark,USER(),NOW());
 END//
 CREATE TRIGGER trg_section_before_update
 BEFORE UPDATE ON Section FOR EACH ROW
@@ -311,7 +314,7 @@ END//
 DELIMITER ;
 
 CREATE VIEW v_StudentDirectory AS
-SELECT s.StudentID, CONCAT_WS(' ',s.FirstName,s.MiddleName,s.FamilyName) AS StudentName,
+SELECT s.StudentID, CONCAT(s.FirstName,' ',s.FamilyName) AS StudentName,
        TIMESTAMPDIFF(YEAR,s.DateOfBirth,CURDATE()) AS Age,
        s.Email,s.StudentStatus,s.AdmissionYear,s.DeptCode,d.DeptName,
        s.AdvisorID
@@ -319,10 +322,10 @@ FROM Student s JOIN Department d ON s.DeptCode=d.DeptCode;
 
 CREATE VIEW v_RegistrationDetails AS
 SELECT r.RegistrationID,r.StudentID,
-       CONCAT_WS(' ',st.FirstName,st.MiddleName,st.FamilyName) AS StudentName,
+       CONCAT(st.FirstName,' ',st.FamilyName) AS StudentName,
        d.DeptName AS DepartmentName,
        r.CourseCode,c.CourseTitle,r.SectionNo,r.Semester,r.AcademicYear,
-       CONCAT_WS(' ',i.FirstName,i.MiddleName,i.FamilyName) AS InstructorName,
+       CONCAT(i.FirstName,' ',i.FamilyName) AS InstructorName,
        r.RegistrationStatus,r.RegistrationDate,r.FinalMark
 FROM Registration r JOIN Student st ON r.StudentID=st.StudentID
 JOIN Department d ON st.DeptCode=d.DeptCode
@@ -334,17 +337,18 @@ JOIN Instructor i ON sec.InstructorID=i.InstructorID;
 CREATE VIEW v_SectionCapacity AS
 SELECT sec.CourseCode,c.CourseTitle,sec.SectionNo,sec.Semester,sec.AcademicYear,
        sec.MaximumCapacity,
-       SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS ActiveEnrollment,
-       sec.MaximumCapacity-SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS RemainingSeats
+       COUNT(r.RegistrationID) AS ActiveEnrollment,
+       sec.MaximumCapacity-COUNT(r.RegistrationID) AS RemainingSeats
 FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
 LEFT JOIN Registration r ON sec.CourseCode=r.CourseCode AND sec.SectionNo=r.SectionNo
     AND sec.Semester=r.Semester AND sec.AcademicYear=r.AcademicYear
+    AND r.RegistrationStatus='Registered'
 GROUP BY sec.CourseCode,c.CourseTitle,sec.SectionNo,sec.Semester,sec.AcademicYear,sec.MaximumCapacity;
 
 DELIMITER //
 CREATE PROCEDURE RegisterStudent(
     IN p_student INT, IN p_course VARCHAR(10), IN p_section VARCHAR(5),
-    IN p_semester VARCHAR(15), IN p_year SMALLINT
+    IN p_semester VARCHAR(15), IN p_year INT
 )
 SQL SECURITY DEFINER
 BEGIN
@@ -382,7 +386,7 @@ BEGIN
       (StudentID,CourseCode,SectionNo,Semester,AcademicYear,RegistrationDate,RegistrationStatus,FinalMark)
     VALUES (p_student,p_course,p_section,p_semester,p_year,CURDATE(),'Registered',NULL);
     COMMIT;
-    SELECT LAST_INSERT_ID() AS NewRegistrationID;
+    SELECT 'Registration created successfully' AS Message;
 END//
 
 CREATE PROCEDURE ChangeRegistrationStatus(IN p_id INT,IN p_status VARCHAR(20))
@@ -391,13 +395,11 @@ BEGIN
     IF p_status NOT IN ('Registered','Dropped') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Use CompleteRegistration to set Completed';
     END IF;
-    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
-    IF ROW_COUNT()=0 THEN
-        -- ROW_COUNT can be zero if the value is unchanged; check existence.
-        IF NOT EXISTS(SELECT 1 FROM Registration WHERE RegistrationID=p_id) THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
-        END IF;
+    IF NOT EXISTS(SELECT 1 FROM Registration WHERE RegistrationID=p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
     END IF;
+    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
+    -- The existence check is done before the UPDATE (no ROW_COUNT needed).
 END//
 
 CREATE PROCEDURE SetFinalMark(IN p_id INT,IN p_mark DECIMAL(5,2))
@@ -431,43 +433,66 @@ BEGIN
     COMMIT;
 END//
 
-CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year SMALLINT)
+-- Lab 6 scalar/correlated subqueries, Lab 5 aggregates, Lab 6 JOIN.
+-- Uses only joins, comparison subqueries, COUNT/AVG/MIN/MAX/ROUND.
+CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year INT)
 SQL SECURITY DEFINER
 BEGIN
-    WITH SectionStats AS (
-        SELECT sec.CourseCode,c.CourseTitle,d.DeptName AS DepartmentName,
-               sec.SectionNo,sec.Semester,sec.AcademicYear,
-               CONCAT_WS(' ',i.FirstName,i.MiddleName,i.FamilyName) AS InstructorName,
-               sec.MaximumCapacity,
-               SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS ActiveEnrollment,
-               sec.MaximumCapacity-SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS RemainingSeats,
-               ROUND(AVG(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END),2) AS AverageCompletedMark,
-               MAX(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END) AS HighestFinalMark,
-               MIN(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END) AS LowestFinalMark,
-               SUM(CASE WHEN r.RegistrationStatus='Completed' AND r.FinalMark<60 THEN 1 ELSE 0 END) AS Below60Count
-        FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
-        JOIN Department d ON c.DeptCode=d.DeptCode
-        JOIN Instructor i ON sec.InstructorID=i.InstructorID
-        LEFT JOIN Registration r ON sec.CourseCode=r.CourseCode AND sec.SectionNo=r.SectionNo
-            AND sec.Semester=r.Semester AND sec.AcademicYear=r.AcademicYear
-        WHERE sec.Semester=p_semester AND sec.AcademicYear=p_year
-        GROUP BY sec.CourseCode,c.CourseTitle,d.DeptName,sec.SectionNo,sec.Semester,
-             sec.AcademicYear,i.FirstName,i.MiddleName,i.FamilyName,sec.MaximumCapacity
-    ), Benchmarks AS (
-        SELECT (SELECT AVG(ActiveEnrollment) FROM SectionStats) AS AvgActiveEnrollment,
-               (SELECT AVG(FinalMark) FROM Registration
-                  WHERE Semester=p_semester AND AcademicYear=p_year
-                    AND RegistrationStatus='Completed' AND FinalMark IS NOT NULL) AS AvgCompletedMark
+    SELECT sec.CourseCode,c.CourseTitle,d.DeptName AS DepartmentName,
+           sec.SectionNo,CONCAT(i.FirstName,' ',i.FamilyName) AS InstructorName,
+           sec.MaximumCapacity,
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Registered') AS ActiveEnrollment,
+           sec.MaximumCapacity-
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Registered') AS RemainingSeats,
+           (SELECT ROUND(AVG(r.FinalMark),2) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS AverageCompletedMark,
+           (SELECT MAX(r.FinalMark) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS HighestFinalMark,
+           (SELECT MIN(r.FinalMark) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS LowestFinalMark,
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed' AND r.FinalMark<60) AS Below60Count
+    FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
+    JOIN Department d ON c.DeptCode=d.DeptCode
+    JOIN Instructor i ON sec.InstructorID=i.InstructorID
+    WHERE sec.Semester=p_semester AND sec.AcademicYear=p_year
+    AND (
+      (SELECT COUNT(*) FROM Registration r
+       WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+         AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+         AND r.RegistrationStatus='Registered') >
+      (SELECT COUNT(*) FROM Registration r
+       WHERE r.Semester=p_semester AND r.AcademicYear=p_year
+         AND r.RegistrationStatus='Registered') /
+      (SELECT COUNT(*) FROM Section s
+       WHERE s.Semester=p_semester AND s.AcademicYear=p_year)
+      OR
+      (SELECT AVG(r.FinalMark) FROM Registration r
+       WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+         AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+         AND r.RegistrationStatus='Completed') <
+      (SELECT AVG(r.FinalMark) FROM Registration r
+       WHERE r.Semester=p_semester AND r.AcademicYear=p_year
+         AND r.RegistrationStatus='Completed')
     )
-    SELECT s.CourseCode,s.CourseTitle,s.DepartmentName,s.SectionNo,s.InstructorName,
-           s.MaximumCapacity,s.ActiveEnrollment,s.RemainingSeats,
-           s.AverageCompletedMark,s.HighestFinalMark,s.LowestFinalMark,s.Below60Count
-    FROM SectionStats s CROSS JOIN Benchmarks b
-    WHERE s.ActiveEnrollment>b.AvgActiveEnrollment
-       OR (s.AverageCompletedMark IS NOT NULL AND s.AverageCompletedMark<b.AvgCompletedMark)
-    ORDER BY s.ActiveEnrollment DESC,s.AverageCompletedMark ASC;
+    ORDER BY ActiveEnrollment DESC, AverageCompletedMark ASC;
 END//
 DELIMITER ;
+
 -- BCS 306 PROJECT 1 | Original professor baseline, plus labelled supporting data.
 -- Run AFTER 02_logic.sql so all eight original registrations produce audit records.
 USE UniversityProject1DB;
@@ -570,21 +595,23 @@ ALTER TABLE Department MODIFY ChairID INT NOT NULL;
 ALTER TABLE Department ADD CONSTRAINT FK_Department_Chair
     FOREIGN KEY (ChairID,DeptCode)
     REFERENCES Instructor(InstructorID,DeptCode)
-    ON UPDATE RESTRICT ON DELETE RESTRICT;
+    ON DELETE RESTRICT;
 
 -- Baseline counts: 4 departments, 5 instructors, 8 students, 9 phones,
 -- 7 specified courses + 1 labelled supporting course, 4 prerequisites,
 -- 6 sections, 8 synthetic meetings, 8 registrations, 8 creation-audit rows.
-SELECT 'Department' AS Entity,COUNT(*) AS Total FROM Department
-UNION ALL SELECT 'Instructor',COUNT(*) FROM Instructor
-UNION ALL SELECT 'Student',COUNT(*) FROM Student
-UNION ALL SELECT 'StudentPhone',COUNT(*) FROM StudentPhone
-UNION ALL SELECT 'Course',COUNT(*) FROM Course
-UNION ALL SELECT 'CoursePrerequisite',COUNT(*) FROM CoursePrerequisite
-UNION ALL SELECT 'Section',COUNT(*) FROM Section
-UNION ALL SELECT 'SectionMeeting',COUNT(*) FROM SectionMeeting
-UNION ALL SELECT 'Registration',COUNT(*) FROM Registration
-UNION ALL SELECT 'RegistrationAudit',COUNT(*) FROM RegistrationAudit;
+-- Verification uses separate SELECT statements as in Labs 3-5.
+SELECT COUNT(*) AS TotalDepartments FROM Department;
+SELECT COUNT(*) AS TotalInstructors FROM Instructor;
+SELECT COUNT(*) AS TotalStudents FROM Student;
+SELECT COUNT(*) AS TotalPhones FROM StudentPhone;
+SELECT COUNT(*) AS TotalCourses FROM Course;
+SELECT COUNT(*) AS TotalPrerequisites FROM CoursePrerequisite;
+SELECT COUNT(*) AS TotalSections FROM Section;
+SELECT COUNT(*) AS TotalMeetings FROM SectionMeeting;
+SELECT COUNT(*) AS TotalRegistrations FROM Registration;
+SELECT COUNT(*) AS TotalAuditEvents FROM RegistrationAudit;
+
 -- BCS 306 PROJECT 1 | Run as MySQL administrator AFTER schema, logic and seed.
 -- CLASSROOM-ONLY demo passwords. CHANGE them before using on a shared server.
 USE UniversityProject1DB;
@@ -639,6 +666,7 @@ GRANT EXECUTE ON PROCEDURE UniversityProject1DB.GetSectionPerformanceReport TO '
 SHOW GRANTS FOR 'p1_registrar'@'localhost';
 SHOW GRANTS FOR 'p1_officer'@'localhost';
 SHOW GRANTS FOR 'p1_report'@'localhost';
+
 -- BCS 306 PROJECT 1 | Examples of labs 4-10 and the advanced report.
 USE UniversityProject1DB;
 
@@ -647,7 +675,7 @@ SELECT StudentID,StudentName,Age,DeptName,StudentStatus
 FROM v_StudentDirectory ORDER BY DeptName,StudentName;
 
 -- More than one phone number (GROUP BY / HAVING).
-SELECT s.StudentID,CONCAT_WS(' ',s.FirstName,s.FamilyName) AS StudentName,
+SELECT s.StudentID,CONCAT(s.FirstName,' ',s.FamilyName) AS StudentName,
        COUNT(p.PhoneNumber) AS PhoneCount
 FROM Student s JOIN StudentPhone p ON s.StudentID=p.StudentID
 GROUP BY s.StudentID,s.FirstName,s.FamilyName HAVING COUNT(p.PhoneNumber)>1;
