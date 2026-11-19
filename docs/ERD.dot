@@ -1,0 +1,29 @@
+digraph UniversityProject1 {
+ graph [rankdir=LR, bgcolor="white", fontname="Arial", label="BCS306 Project 1 — University Academic Records | Relational ERD", labelloc="t", fontsize=23, pad=0.35, nodesep=0.42, ranksep=0.95, splines=polyline];
+ node [shape=plain, fontname="Arial"];
+ edge [color="#4a627d", fontname="Arial", fontsize=10, arrowsize=0.7];
+ Department [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#eef4ff"><TR><TD BGCOLOR="#dbeafe"><B>DEPARTMENT</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> DeptCode</TD></TR><TR><TD ALIGN="LEFT">DeptName (unique), Office</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> ChairID (unique, required)</TD></TR></TABLE>>];
+ Instructor [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#eef4ff"><TR><TD BGCOLOR="#dbeafe"><B>INSTRUCTOR</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> InstructorID</TD></TR><TR><TD ALIGN="LEFT">FirstName, MiddleName, FamilyName</TD></TR><TR><TD ALIGN="LEFT">Email (unique), Specialization</TD></TR><TR><TD ALIGN="LEFT">OfficeExtension, FK DeptCode</TD></TR></TABLE>>];
+ Student [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#eef4ff"><TR><TD BGCOLOR="#dbeafe"><B>STUDENT</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> StudentID</TD></TR><TR><TD ALIGN="LEFT">FirstName, MiddleName, FamilyName</TD></TR><TR><TD ALIGN="LEFT">DateOfBirth, Email (unique)</TD></TR><TR><TD ALIGN="LEFT">AdmissionYear, StudentStatus</TD></TR><TR><TD ALIGN="LEFT">Street, City, Emirate, PostalCode</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> DeptCode, AdvisorID (optional)</TD></TR><TR><TD ALIGN="LEFT"><I>Age derived, not stored</I></TD></TR></TABLE>>];
+ StudentPhone [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#fef3c7"><TR><TD BGCOLOR="#fde68a"><B>STUDENT_PHONE</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK/FK</B> StudentID</TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> PhoneNumber</TD></TR></TABLE>>];
+ Course [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#eef4ff"><TR><TD BGCOLOR="#dbeafe"><B>COURSE</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> CourseCode</TD></TR><TR><TD ALIGN="LEFT">CourseTitle, Credits, AcademicLevel</TD></TR><TR><TD ALIGN="LEFT">CourseStatus, FK DeptCode</TD></TR></TABLE>>];
+ Prerequisite [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#fef3c7"><TR><TD BGCOLOR="#fde68a"><B>COURSE_PREREQUISITE</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK/FK</B> CourseCode</TD></TR><TR><TD ALIGN="LEFT"><B>PK/FK</B> PrerequisiteCourseCode</TD></TR></TABLE>>];
+ Section [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#fef3c7"><TR><TD BGCOLOR="#fde68a"><B>SECTION</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK/FK</B> CourseCode</TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> SectionNo, Semester, AcademicYear</TD></TR><TR><TD ALIGN="LEFT">MaximumCapacity, Classroom</TD></TR><TR><TD ALIGN="LEFT">DeliveryMode, FK InstructorID</TD></TR></TABLE>>];
+ SectionMeeting [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#fef3c7"><TR><TD BGCOLOR="#fde68a"><B>SECTION_MEETING</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK/FK</B> Section composite key</TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> MeetingNo</TD></TR><TR><TD ALIGN="LEFT">DayOfWeek, StartTime, EndTime, Room</TD></TR></TABLE>>];
+ Registration [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#e5f7ea"><TR><TD BGCOLOR="#bbf7d0"><B>REGISTRATION</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> RegistrationID</TD></TR><TR><TD ALIGN="LEFT"><B>FK</B> StudentID + Section composite key</TD></TR><TR><TD ALIGN="LEFT">RegistrationDate, RegistrationStatus</TD></TR><TR><TD ALIGN="LEFT">FinalMark (nullable, 0..100)</TD></TR><TR><TD ALIGN="LEFT">Unique(StudentID, Section key)</TD></TR></TABLE>>];
+ Audit [label=<<TABLE BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="6" BGCOLOR="#fce7f3"><TR><TD BGCOLOR="#fbcfe8"><B>REGISTRATION_AUDIT</B></TD></TR><TR><TD ALIGN="LEFT"><B>PK</B> AuditID</TD></TR><TR><TD ALIGN="LEFT">RegistrationID + snapshots</TD></TR><TR><TD ALIGN="LEFT">EventType, OldStatus, NewStatus</TD></TR><TR><TD ALIGN="LEFT">OldFinalMark, NewFinalMark</TD></TR><TR><TD ALIGN="LEFT">DatabaseUser, EventTime</TD></TR></TABLE>>];
+ Department -> Instructor [label="employs 1:N"];
+ Department -> Student [label="has 1:N"];
+ Department -> Course [label="offers 1:N"];
+ Instructor -> Department [label="chairs 0..1 : 1",style=dashed,constraint=false];
+ Instructor -> Student [label="advises 1:N (optional student)",style=dashed,constraint=false];
+ Instructor -> Section [label="teaches 1:N",constraint=false];
+ Student -> StudentPhone [label="has 1:N"];
+ Student -> Registration [label="enrolls 1:N"];
+ Course -> Section [label="offered as 1:N"];
+ Course -> Prerequisite [label="course 1:N",constraint=false];
+ Prerequisite -> Course [label="requires N:1",style=dashed,constraint=false];
+ Section -> SectionMeeting [label="holds 1:N"];
+ Section -> Registration [label="enrollments 1:N"];
+ Registration -> Audit [label="historical events (no FK)",style=dotted,constraint=false];
+}
