@@ -5,11 +5,11 @@ A complete **MySQL 8 + Python 3/Tkinter** classroom implementation based on the 
 
 ## GitHub publishing
 
-The repository can be made public. See **[PUBLISH_TO_GITHUB.md](PUBLISH_TO_GITHUB.md)** for the GitHub creation and first-push instructions. The `.gitignore` prevents publishing local virtual environments, secret configuration files, and temporary data. The public SQL scripts use **password placeholders**, not working passwords. Replace each `CHANGE_ME_*` value with a strong password before executing SQL account creation.
+This repository is public and already contains the project code. The `.gitignore` excludes virtual environments, secret configuration files, and temporary data. The public SQL scripts use **password placeholders**, not working passwords. Replace each `CHANGE_ME_*` value with a strong password before executing SQL account creation.
 
 ## Quick start (Windows + MySQL Workbench + Visual Studio / Python)
 
-**Requirements:** MySQL Server **8.0.16+** (8.0.34 or newer preferred), MySQL Workbench, Python 3.10+ with Tkinter.
+**Requirements:** MySQL Server **8.0.16+** (MySQL 8.0 or newer recommended), MySQL Workbench, Python 3.10+ with Tkinter.
 
 1. Open **MySQL Workbench** and connect as your **local administrator/root** account **only to set up the database**.
 2. Open **`sql/ALL_IN_ONE_SETUP.sql`** in Workbench and run **the entire file**. This creates a separate `UniversityProject1DB`, loads the baseline dataset, installs the database logic, and creates three restricted MySQL users. **Important: this reset script DROPS `UniversityProject1DB`, deleting any earlier project data.** Never run it against real data.
@@ -44,6 +44,7 @@ The single setup file is built from the first five scripts. **Before running eit
 5. `05_queries.sql` — reusable demonstrations and the advanced report.
 6. `06_demo_tests.sql` — examples of valid/invalid queries; the **mutation tests are commented out** so running the file does not silently change your baseline.
 7. `07_assert_baseline.sql` — checks baseline counts and requirements; run **before making modifications through the GUI**.
+8. `docs/LAB_SYNTAX_AUDIT.md` — precise lab-to-feature comparison, unavoidable extensions and local validation instructions.
 
 **Do not accidentally run `01_schema.sql` again after your testing** unless you want to reset the project.
 
@@ -98,9 +99,9 @@ For marking, rerun a fresh setup, take screenshot evidence **before modifying da
 - **Prerequisite completion enforcement is not implemented** because the scenario specifically requires representing prerequisites and explicitly validates section existence, uniqueness, and capacity at registration; additionally, the supplied baseline registers student 101 in BCS301 without a completed BCS210. Adding prerequisite checking without exceptions would reject instructor-provided data.
 - The database does not implement a comprehensive timetable-clash detection system or generalized administrative user management. They are sensible extensions, not explicit business operations in the brief.
 - This is a classroom desktop implementation; use dedicated restricted accounts, rotate passwords, and implement secure deployment practices before any real-world usage.
-- The complex report assumes MySQL 8.0 because it uses common table expressions (CTEs).
+- The advanced report uses joins, aggregate functions, and scalar subqueries rather than common table expressions (CTEs). See `docs/LAB_SYNTAX_AUDIT.md` for the small number of required MySQL extensions outside the literal lab examples.
 - GUI validation improves feedback, but **all essential integrity checks are in MySQL**, so MySQL rejects forbidden actions outside Python too.
 
 ## What has and has not been verified here
 
-The Python files have passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. Both SQL setup paths, the baseline checks, and the Fall 2026 report passed on MySQL 8.0.46. Capture Workbench and GUI test evidence for submission.
+The original Python application files passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. **Live MySQL execution has not been confirmed in this audit environment.** Run the all-in-one setup, `07_assert_baseline.sql`, all role checks, and the Fall 2026 report locally before claiming a successful database demonstration. Capture Workbench and GUI test evidence for submission.
