@@ -1,0 +1,4 @@
+CourseCode,CourseTitle,DepartmentName,SectionNo,InstructorName,MaximumCapacity,ActiveEnrollment,RemainingSeats,AverageCompletedMark,HighestFinalMark,LowestFinalMark,Below60Count
+BCS301,Operating System Fundamentals,Computer Science,01,Maha A. Ali,9,1,8,,,,0
+CYS321,Security Threats and Risk Analysis,Cybersecurity,01,Noor S. Salem,8,0,8,52.00,52.00,52.00,1
+BCS221,Networking Basics,Information Technology,01,Amal N. Noor,10,0,10,74.00,81.00,67.00,0
