@@ -77,7 +77,6 @@ CREATE TABLE CoursePrerequisite (
     CourseCode VARCHAR(10) NOT NULL,
     PrerequisiteCourseCode VARCHAR(10) NOT NULL,
     CONSTRAINT PK_CoursePrerequisite PRIMARY KEY (CourseCode, PrerequisiteCourseCode),
-    CONSTRAINT CHK_NotOwnPrerequisite CHECK (CourseCode <> PrerequisiteCourseCode),
     CONSTRAINT FK_Prereq_Course FOREIGN KEY (CourseCode)
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT FK_Prereq_Required FOREIGN KEY (PrerequisiteCourseCode)
@@ -178,6 +177,25 @@ SHOW TABLES;
 USE UniversityProject1DB;
 
 DELIMITER //
+-- Use triggers because the prerequisite columns have cascading foreign keys.
+CREATE TRIGGER trg_prerequisite_before_insert
+BEFORE INSERT ON CoursePrerequisite FOR EACH ROW
+BEGIN
+    IF NEW.CourseCode = NEW.PrerequisiteCourseCode THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A course cannot be its own prerequisite';
+    END IF;
+END//
+
+CREATE TRIGGER trg_prerequisite_before_update
+BEFORE UPDATE ON CoursePrerequisite FOR EACH ROW
+BEGIN
+    IF NEW.CourseCode = NEW.PrerequisiteCourseCode THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'A course cannot be its own prerequisite';
+    END IF;
+END//
+
 CREATE TRIGGER trg_registration_before_insert
 BEFORE INSERT ON Registration FOR EACH ROW
 BEGIN
