@@ -25,12 +25,13 @@ The Python GUI was rewritten as an ordinary procedural application. It no longer
 
 **These should not be misrepresented as syntax covered by the labs.** They are deliberately retained to satisfy Project 1's extra requirements:
 
-1. `SELECT ... FOR UPDATE` inside the registration logic locks the section while checking capacity. This helps prevent concurrent registration requests from both taking the last seat; a normal SELECT does not provide this guarantee.
+1. `SELECT ... FOR UPDATE` inside the registration logic locks the section while checking capacity. This helps prevent concurrent registration requests from both taking the last seat; a normal SELECT does not provide this guarantee. The registration procedure now obtains this lock **before** any ordinary SELECT to avoid an old repeatable-read snapshot.
 2. `RESIGNAL` in the SQL exception handler re-raises the actual error after ROLLBACK. Lab 9's optional Stay Ahead section demonstrates an EXIT HANDLER, but not RESIGNAL. Omitting it would risk reporting an unsuccessful registration as a success or hide the real error.
 3. `USER()` in audit triggers captures the MySQL account responsible for a registration change, as explicitly required by Project 1.
 4. `DROP USER IF EXISTS` is used only in administrator setup to rebuild demonstration accounts cleanly. The labs teach CREATE USER/GRANT and the related DROP/IF EXISTS concepts, but do not explicitly demonstrate that combined user-removal command.
 5. `tk.Frame` and `tk.Text` are standard Tkinter widgets for grouping controls and displaying the required multi-column report. Lab 10 directly demonstrates Tk, Label, Entry, Button and messagebox, but does not directly demonstrate those two additional widgets.
 6. Correlated aggregate subqueries in SELECT are a composition of Lab 5 aggregate functions and Lab 6 scalar subqueries. The supplied examples teach those component ideas but not the exact advanced report query.
+7. The GUI uses `cursor.stored_results()` to retrieve a result set from `callproc`; Lab 10 teaches `callproc` itself but not this retrieval method. It is needed to show the required report on screen.
 
 There is **no honest way to claim every remaining syntax form appeared verbatim in the uploaded labs** while also implementing the concurrency, audit attribution, and advanced report requirements safely.
 
@@ -54,6 +55,7 @@ There is **no honest way to claim every remaining syntax form appeared verbatim 
 2. Run `sql/07_assert_baseline.sql` before making GUI changes.
 3. Run `CALL GetSectionPerformanceReport('Fall', 2026);` and compare its three expected rows with `docs/EXPECTED_BASELINE_REPORT.csv` (a prediction, not a screenshot).
 4. Check `SHOW GRANTS` for p1_registrar, p1_officer and p1_report; log in separately using the same credentials in the GUI.
+   Run `python -m py_compile app/main.py app/test_connection.py` from the project root to check current Python syntax.
 5. Test a successful and duplicate registration, a missing section, a completed mark update, audit events, and unauthorized updates.
 6. Check capacity enforcement when two MySQL sessions attempt registration at the same time; ordinary single-session testing is insufficient to verify concurrency behavior.
 
