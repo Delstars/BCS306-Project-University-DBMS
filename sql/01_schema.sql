@@ -77,7 +77,6 @@ CREATE TABLE CoursePrerequisite (
     CourseCode VARCHAR(10) NOT NULL,
     PrerequisiteCourseCode VARCHAR(10) NOT NULL,
     CONSTRAINT PK_CoursePrerequisite PRIMARY KEY (CourseCode, PrerequisiteCourseCode),
-    CONSTRAINT CHK_NotOwnPrerequisite CHECK (CourseCode <> PrerequisiteCourseCode),
     CONSTRAINT FK_Prereq_Course FOREIGN KEY (CourseCode)
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT FK_Prereq_Required FOREIGN KEY (PrerequisiteCourseCode)

@@ -38,7 +38,7 @@ The repository can be made public. See **[PUBLISH_TO_GITHUB.md](PUBLISH_TO_GITHU
 The single setup file is built from the first five scripts. **Before running either setup method, replace `CHANGE_ME_REGISTRAR`, `CHANGE_ME_OFFICER`, and `CHANGE_ME_REPORT` in the setup/security SQL with passwords of your choosing.**
 
 1. `01_schema.sql` — creates the normalized tables, keys, and constraints; **drops and recreates only `UniversityProject1DB`**.
-2. `02_logic.sql` — creates five audit/validation triggers on Registration, one capacity trigger on Section, three views, and five stored procedures.
+2. `02_logic.sql` — creates prerequisite, registration, capacity, and audit triggers, three views, and five stored procedures.
 3. `03_seed.sql` — loads all professor-provided sample records and the explicitly documented additions below. The eight inserted registrations generate audit events automatically.
 4. `04_security.sql` — creates and grants least-privilege MySQL accounts.
 5. `05_queries.sql` — reusable demonstrations and the advanced report.
@@ -103,4 +103,4 @@ For marking, rerun a fresh setup, take screenshot evidence **before modifying da
 
 ## What has and has not been verified here
 
-The Python files have passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. **No MySQL Server was available in the creation environment**, so the scripts and desktop GUI have **not been executed against a live MySQL instance**. Follow the provided local setup and capture actual Workbench and GUI test evidence for submission.
+The Python files have passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. Both SQL setup paths, the baseline checks, and the Fall 2026 report passed on MySQL 8.0.46. Capture Workbench and GUI test evidence for submission.
