@@ -82,10 +82,10 @@ AFTER INSERT ON Registration FOR EACH ROW
 BEGIN
     INSERT INTO RegistrationAudit
        (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-        EventType,NewStatus,NewFinalMark,DatabaseUser)
+        EventType,NewStatus,NewFinalMark,DatabaseUser,EventTime)
     VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
         NEW.Semester,NEW.AcademicYear,'REGISTRATION_CREATED',
-        NEW.RegistrationStatus,NEW.FinalMark,USER());
+        NEW.RegistrationStatus,NEW.FinalMark,USER(),NOW());
 END//
 
 CREATE TRIGGER trg_registration_after_update
@@ -94,18 +94,18 @@ BEGIN
     IF NOT(OLD.RegistrationStatus <=> NEW.RegistrationStatus) THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser)
+           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
         VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
           NEW.Semester,NEW.AcademicYear,'REGISTRATION_STATUS_CHANGED',
-          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER());
+          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER(),NOW());
     END IF;
     IF NOT(OLD.FinalMark <=> NEW.FinalMark) THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser)
+           EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
         VALUES (NEW.RegistrationID,NEW.StudentID,NEW.CourseCode,NEW.SectionNo,
           NEW.Semester,NEW.AcademicYear,'FINAL_MARK_CHANGED',
-          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER());
+          OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER(),NOW());
     END IF;
 END//
 
@@ -114,10 +114,10 @@ AFTER DELETE ON Registration FOR EACH ROW
 BEGIN
     INSERT INTO RegistrationAudit
       (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
-       EventType,OldStatus,OldFinalMark,DatabaseUser)
+       EventType,OldStatus,OldFinalMark,DatabaseUser,EventTime)
     VALUES (OLD.RegistrationID,OLD.StudentID,OLD.CourseCode,OLD.SectionNo,
        OLD.Semester,OLD.AcademicYear,'REGISTRATION_DELETED',
-       OLD.RegistrationStatus,OLD.FinalMark,USER());
+       OLD.RegistrationStatus,OLD.FinalMark,USER(),NOW());
 END//
 CREATE TRIGGER trg_section_before_update
 BEFORE UPDATE ON Section FOR EACH ROW
@@ -137,18 +137,18 @@ END//
 DELIMITER ;
 
 CREATE VIEW v_StudentDirectory AS
-SELECT s.StudentID, CONCAT_WS(' ',s.FirstName,s.MiddleName,s.FamilyName) AS StudentName,
-       TIMESTAMPDIFF(YEAR,s.DateOfBirth,CURDATE()) AS Age,
+SELECT s.StudentID, CONCAT(s.FirstName,' ',s.FamilyName) AS StudentName,
+       YEAR(CURDATE()) - YEAR(s.DateOfBirth) - (DATE_FORMAT(CURDATE(),'%m%d') < DATE_FORMAT(s.DateOfBirth,'%m%d')) AS Age,
        s.Email,s.StudentStatus,s.AdmissionYear,s.DeptCode,d.DeptName,
        s.AdvisorID
 FROM Student s JOIN Department d ON s.DeptCode=d.DeptCode;
 
 CREATE VIEW v_RegistrationDetails AS
 SELECT r.RegistrationID,r.StudentID,
-       CONCAT_WS(' ',st.FirstName,st.MiddleName,st.FamilyName) AS StudentName,
+       CONCAT(st.FirstName,' ',st.FamilyName) AS StudentName,
        d.DeptName AS DepartmentName,
        r.CourseCode,c.CourseTitle,r.SectionNo,r.Semester,r.AcademicYear,
-       CONCAT_WS(' ',i.FirstName,i.MiddleName,i.FamilyName) AS InstructorName,
+       CONCAT(i.FirstName,' ',i.FamilyName) AS InstructorName,
        r.RegistrationStatus,r.RegistrationDate,r.FinalMark
 FROM Registration r JOIN Student st ON r.StudentID=st.StudentID
 JOIN Department d ON st.DeptCode=d.DeptCode
@@ -160,17 +160,18 @@ JOIN Instructor i ON sec.InstructorID=i.InstructorID;
 CREATE VIEW v_SectionCapacity AS
 SELECT sec.CourseCode,c.CourseTitle,sec.SectionNo,sec.Semester,sec.AcademicYear,
        sec.MaximumCapacity,
-       SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS ActiveEnrollment,
-       sec.MaximumCapacity-SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS RemainingSeats
+       COUNT(r.RegistrationID) AS ActiveEnrollment,
+       sec.MaximumCapacity-COUNT(r.RegistrationID) AS RemainingSeats
 FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
 LEFT JOIN Registration r ON sec.CourseCode=r.CourseCode AND sec.SectionNo=r.SectionNo
     AND sec.Semester=r.Semester AND sec.AcademicYear=r.AcademicYear
+    AND r.RegistrationStatus='Registered'
 GROUP BY sec.CourseCode,c.CourseTitle,sec.SectionNo,sec.Semester,sec.AcademicYear,sec.MaximumCapacity;
 
 DELIMITER //
 CREATE PROCEDURE RegisterStudent(
     IN p_student INT, IN p_course VARCHAR(10), IN p_section VARCHAR(5),
-    IN p_semester VARCHAR(15), IN p_year SMALLINT
+    IN p_semester VARCHAR(15), IN p_year INT
 )
 SQL SECURITY DEFINER
 BEGIN
@@ -257,40 +258,62 @@ BEGIN
     COMMIT;
 END//
 
-CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year SMALLINT)
+-- Lab 6 scalar/correlated subqueries, Lab 5 aggregates, Lab 6 JOIN.
+-- No WITH, CROSS JOIN or CASE WHEN.
+CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year INT)
 SQL SECURITY DEFINER
 BEGIN
-    WITH SectionStats AS (
-        SELECT sec.CourseCode,c.CourseTitle,d.DeptName AS DepartmentName,
-               sec.SectionNo,sec.Semester,sec.AcademicYear,
-               CONCAT_WS(' ',i.FirstName,i.MiddleName,i.FamilyName) AS InstructorName,
-               sec.MaximumCapacity,
-               SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS ActiveEnrollment,
-               sec.MaximumCapacity-SUM(CASE WHEN r.RegistrationStatus='Registered' THEN 1 ELSE 0 END) AS RemainingSeats,
-               ROUND(AVG(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END),2) AS AverageCompletedMark,
-               MAX(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END) AS HighestFinalMark,
-               MIN(CASE WHEN r.RegistrationStatus='Completed' THEN r.FinalMark END) AS LowestFinalMark,
-               SUM(CASE WHEN r.RegistrationStatus='Completed' AND r.FinalMark<60 THEN 1 ELSE 0 END) AS Below60Count
-        FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
-        JOIN Department d ON c.DeptCode=d.DeptCode
-        JOIN Instructor i ON sec.InstructorID=i.InstructorID
-        LEFT JOIN Registration r ON sec.CourseCode=r.CourseCode AND sec.SectionNo=r.SectionNo
-            AND sec.Semester=r.Semester AND sec.AcademicYear=r.AcademicYear
-        WHERE sec.Semester=p_semester AND sec.AcademicYear=p_year
-        GROUP BY sec.CourseCode,c.CourseTitle,d.DeptName,sec.SectionNo,sec.Semester,
-             sec.AcademicYear,i.FirstName,i.MiddleName,i.FamilyName,sec.MaximumCapacity
-    ), Benchmarks AS (
-        SELECT (SELECT AVG(ActiveEnrollment) FROM SectionStats) AS AvgActiveEnrollment,
-               (SELECT AVG(FinalMark) FROM Registration
-                  WHERE Semester=p_semester AND AcademicYear=p_year
-                    AND RegistrationStatus='Completed' AND FinalMark IS NOT NULL) AS AvgCompletedMark
+    SELECT sec.CourseCode,c.CourseTitle,d.DeptName AS DepartmentName,
+           sec.SectionNo,CONCAT(i.FirstName,' ',i.FamilyName) AS InstructorName,
+           sec.MaximumCapacity,
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Registered') AS ActiveEnrollment,
+           sec.MaximumCapacity-
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Registered') AS RemainingSeats,
+           (SELECT ROUND(AVG(r.FinalMark),2) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS AverageCompletedMark,
+           (SELECT MAX(r.FinalMark) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS HighestFinalMark,
+           (SELECT MIN(r.FinalMark) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed') AS LowestFinalMark,
+           (SELECT COUNT(*) FROM Registration r
+            WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+              AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+              AND r.RegistrationStatus='Completed' AND r.FinalMark<60) AS Below60Count
+    FROM Section sec JOIN Course c ON sec.CourseCode=c.CourseCode
+    JOIN Department d ON c.DeptCode=d.DeptCode
+    JOIN Instructor i ON sec.InstructorID=i.InstructorID
+    WHERE sec.Semester=p_semester AND sec.AcademicYear=p_year
+    AND (
+      (SELECT COUNT(*) FROM Registration r
+       WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+         AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+         AND r.RegistrationStatus='Registered') >
+      (SELECT COUNT(*) FROM Registration r
+       WHERE r.Semester=p_semester AND r.AcademicYear=p_year
+         AND r.RegistrationStatus='Registered') /
+      (SELECT COUNT(*) FROM Section s
+       WHERE s.Semester=p_semester AND s.AcademicYear=p_year)
+      OR
+      (SELECT AVG(r.FinalMark) FROM Registration r
+       WHERE r.CourseCode=sec.CourseCode AND r.SectionNo=sec.SectionNo
+         AND r.Semester=sec.Semester AND r.AcademicYear=sec.AcademicYear
+         AND r.RegistrationStatus='Completed') <
+      (SELECT AVG(r.FinalMark) FROM Registration r
+       WHERE r.Semester=p_semester AND r.AcademicYear=p_year
+         AND r.RegistrationStatus='Completed')
     )
-    SELECT s.CourseCode,s.CourseTitle,s.DepartmentName,s.SectionNo,s.InstructorName,
-           s.MaximumCapacity,s.ActiveEnrollment,s.RemainingSeats,
-           s.AverageCompletedMark,s.HighestFinalMark,s.LowestFinalMark,s.Below60Count
-    FROM SectionStats s CROSS JOIN Benchmarks b
-    WHERE s.ActiveEnrollment>b.AvgActiveEnrollment
-       OR (s.AverageCompletedMark IS NOT NULL AND s.AverageCompletedMark<b.AvgCompletedMark)
-    ORDER BY s.ActiveEnrollment DESC,s.AverageCompletedMark ASC;
+    ORDER BY ActiveEnrollment DESC, AverageCompletedMark ASC;
 END//
 DELIMITER ;
