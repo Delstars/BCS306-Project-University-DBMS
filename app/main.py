@@ -173,7 +173,7 @@ def home():
 def students_screen():
     fields = ("StudentID", "FirstName", "MiddleName", "FamilyName",
               "DateOfBirth", "Email", "AdmissionYear", "StudentStatus",
-              "DeptCode", "AdvisorID")
+              "DeptCode", "AdvisorID", "Street", "City", "Emirate", "PostalCode")
     entries, bar, output = screen("Student Maintenance", fields)
     entries["StudentStatus"].insert(0, "Active")
     def add():
@@ -182,21 +182,25 @@ def students_screen():
             entries["MiddleName"].get() or None, entries["FamilyName"].get(),
             entries["DateOfBirth"].get(), entries["Email"].get(),
             int(entries["AdmissionYear"].get()), entries["StudentStatus"].get(),
-            entries["DeptCode"].get(), int(entries["AdvisorID"].get()) if entries["AdvisorID"].get() else None
+            entries["DeptCode"].get(), int(entries["AdvisorID"].get()) if entries["AdvisorID"].get() else None,
+            entries["Street"].get() or None, entries["City"].get() or None,
+            entries["Emirate"].get() or None, entries["PostalCode"].get() or None
         )
         execute("""INSERT INTO Student
             (StudentID,FirstName,MiddleName,FamilyName,DateOfBirth,Email,
-             AdmissionYear,StudentStatus,DeptCode,AdvisorID)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", values)
+             AdmissionYear,StudentStatus,DeptCode,AdvisorID,Street,City,Emirate,PostalCode)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""", values)
     def update():
         execute("""UPDATE Student SET FirstName=%s,MiddleName=%s,FamilyName=%s,
            DateOfBirth=%s,Email=%s,AdmissionYear=%s,StudentStatus=%s,
-           DeptCode=%s,AdvisorID=%s WHERE StudentID=%s""",
+           DeptCode=%s,AdvisorID=%s,Street=%s,City=%s,Emirate=%s,PostalCode=%s WHERE StudentID=%s""",
            (entries["FirstName"].get(), entries["MiddleName"].get() or None,
             entries["FamilyName"].get(), entries["DateOfBirth"].get(),
             entries["Email"].get(), int(entries["AdmissionYear"].get()),
             entries["StudentStatus"].get(), entries["DeptCode"].get(),
             int(entries["AdvisorID"].get()) if entries["AdvisorID"].get() else None,
+            entries["Street"].get() or None, entries["City"].get() or None,
+            entries["Emirate"].get() or None, entries["PostalCode"].get() or None,
             int(entries["StudentID"].get())))
     def search():
         value = entries["StudentID"].get().strip()
