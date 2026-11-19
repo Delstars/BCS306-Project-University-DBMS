@@ -175,7 +175,6 @@ CREATE PROCEDURE RegisterStudent(
     IN p_student INT, IN p_course VARCHAR(10), IN p_section VARCHAR(5),
     IN p_semester VARCHAR(15), IN p_year INT
 )
-SQL SECURITY DEFINER
 BEGIN
     DECLARE v_capacity INT DEFAULT NULL;
     DECLARE v_active INT DEFAULT 0;
@@ -215,42 +214,44 @@ BEGIN
 END//
 
 CREATE PROCEDURE ChangeRegistrationStatus(IN p_id INT,IN p_status VARCHAR(20))
-SQL SECURITY DEFINER
 BEGIN
+    DECLARE v_exists INT DEFAULT 0;
     IF p_status NOT IN ('Registered','Dropped') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Use CompleteRegistration to set Completed';
     END IF;
-    IF NOT EXISTS(SELECT 1 FROM Registration WHERE RegistrationID=p_id) THEN
+    SELECT COUNT(*) INTO v_exists FROM Registration WHERE RegistrationID=p_id;
+    IF v_exists=0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
     END IF;
     UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
-    -- The existence check is done before the UPDATE (no ROW_COUNT needed).
 END//
 
 CREATE PROCEDURE SetFinalMark(IN p_id INT,IN p_mark DECIMAL(5,2))
-SQL SECURITY DEFINER
 BEGIN
+    DECLARE v_exists INT DEFAULT 0;
     IF p_mark IS NULL OR p_mark<0 OR p_mark>100 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Final mark must be between 0 and 100';
     END IF;
-    IF NOT EXISTS(SELECT 1 FROM Registration
-                  WHERE RegistrationID=p_id AND RegistrationStatus<>'Dropped') THEN
+    SELECT COUNT(*) INTO v_exists FROM Registration
+    WHERE RegistrationID=p_id AND RegistrationStatus<>'Dropped';
+    IF v_exists=0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found or is dropped';
     END IF;
     UPDATE Registration SET FinalMark=p_mark WHERE RegistrationID=p_id;
 END//
 
 CREATE PROCEDURE CompleteRegistration(IN p_id INT,IN p_mark DECIMAL(5,2))
-SQL SECURITY DEFINER
 BEGIN
+    DECLARE v_exists INT DEFAULT 0;
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN ROLLBACK; RESIGNAL; END;
     IF p_mark IS NULL OR p_mark<0 OR p_mark>100 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Final mark must be between 0 and 100';
     END IF;
     START TRANSACTION;
-    IF NOT EXISTS(SELECT 1 FROM Registration
-                  WHERE RegistrationID=p_id AND RegistrationStatus<>'Dropped') THEN
+    SELECT COUNT(*) INTO v_exists FROM Registration
+    WHERE RegistrationID=p_id AND RegistrationStatus<>'Dropped';
+    IF v_exists=0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found or is dropped';
     END IF;
     UPDATE Registration SET RegistrationStatus='Completed',FinalMark=p_mark
@@ -261,7 +262,6 @@ END//
 -- Lab 6 scalar/correlated subqueries, Lab 5 aggregates, Lab 6 JOIN.
 -- Uses only joins, comparison subqueries, COUNT/AVG/MIN/MAX/ROUND.
 CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year INT)
-SQL SECURITY DEFINER
 BEGIN
     SELECT sec.CourseCode,c.CourseTitle,d.DeptName AS DepartmentName,
            sec.SectionNo,CONCAT(i.FirstName,' ',i.FamilyName) AS InstructorName,
