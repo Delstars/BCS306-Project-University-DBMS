@@ -209,17 +209,17 @@ def students_screen():
             messagebox.showerror("Permission denied", "Registrar only.")
             return
         if messagebox.askyesno("Confirm", "Delete this student?"):
-            alert_action(lambda_delete)
-    def lambda_delete():
+            alert_action(delete_student)
+    def delete_student():
         execute("DELETE FROM Student WHERE StudentID=%s", (int(entries["StudentID"].get()),))
     tk.Button(bar, text="Show / Search", command=search).pack(side="left", padx=4)
-    tk.Button(bar, text="Add", command=lambda_add).pack(side="left", padx=4)
-    tk.Button(bar, text="Update", command=lambda_update).pack(side="left", padx=4)
+    tk.Button(bar, text="Add", command=add_student_click).pack(side="left", padx=4)
+    tk.Button(bar, text="Update", command=update_student_click).pack(side="left", padx=4)
     if role == "p1_registrar":
         tk.Button(bar, text="Delete", command=delete).pack(side="left", padx=4)
-    def lambda_add():
+    def add_student_click():
         alert_action(add)
-    def lambda_update():
+    def update_student_click():
         alert_action(update)
     search()
 
