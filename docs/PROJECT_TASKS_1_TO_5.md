@@ -131,7 +131,7 @@ The database has three MySQL accounts for demonstration. Registrar has operation
 
 ### Desktop application
 
-`app/main.py` starts with a MySQL username/password login, creates a connection using the submitted credentials, and routes users to role-specific tabs. It uses Tkinter forms, `ttk.Treeview` tables, parameterized `cursor.execute(sql, params)` queries, `cursor.callproc`, error dialogs and transaction handling from Lab 10. Student maintenance, student phone entries, capacity browsing, section creation, enrollment, controlled status changes, mark entry/completion, audit viewing, and advanced reporting are available as authorized.
+`app/main.py` starts with a MySQL username/password login, creates a connection using the submitted credentials, and shows only menu actions relevant to each MySQL role. It uses simple function-based Tkinter forms, Label/Entry/Button/Text widgets, parameterized `cursor.execute(sql, params)` queries, `cursor.callproc`, error dialogs, and commit/rollback consistent with Lab 10. `tk.Text` and `tk.Frame` are standard display/container widgets added to show larger result sets. Student maintenance, student phone entries, capacity browsing, section creation, enrollment, controlled status changes, mark entry/completion, audit viewing, and advanced reporting are available as authorized.
 
 ### Advanced Academic Section Performance and Capacity Report
 
@@ -139,7 +139,7 @@ For **a selected Semester and AcademicYear**, the report returns per section Cou
 
 `ActiveEnrollment > average active enrollment for all sections in the selected term` **OR** `AverageCompletedMark < overall mean of completed final marks for the selected term`.
 
-It sorts active enrollment **descending**, then average completed mark **ascending**, using two MySQL CTEs. A section without completed marks has NULL mean and cannot qualify through the mark condition alone.
+It sorts active enrollment **descending**, then average completed mark **ascending**, using Lab 5 aggregates and Lab 6 scalar subqueries instead of CTEs. A section without completed marks has NULL mean and cannot qualify through the mark condition alone.
 
 **Expected baseline, calculated from the instructor dataset (not actual MySQL evidence):**
 
@@ -180,7 +180,7 @@ The baseline overall completed-mark mean is approximately **77.29** (seven compl
 - **Triggers:** enforce essential checks for direct SQL operations and generate audit events automatically; triggers also increase hidden database logic and therefore need thorough testing/documentation.
 - **Stored procedures:** centralize controlled operations and enable EXECUTE-only access for officers. They increase reliance on database-side code, which should be version-controlled.
 - **Views:** simplify the multi-table SQL required by the GUI and reporting users; view definitions must be maintained when base tables change.
-- **Privileges:** role-specific DB credentials limit unauthorized operations even if the GUI is bypassed. Demo passwords are visible and appropriate only for isolated coursework environments.
+- **Privileges:** role-specific DB credentials limit unauthorized operations even if the GUI is bypassed. The public SQL uses password placeholders; choose local demo passwords before setup.
 - **DB validation vs GUI validation:** basic Tkinter input validation improves user experience; the database remains authoritative for foreign keys, unique registrations, marks, capacities, and permissions.
 
 ### Recommended extensions
@@ -191,6 +191,6 @@ Add enforced prerequisite completion with an explicit academic override policy, 
 
 Suggested submission order: cover page; abstract; requirements and assumptions; Task 1 modeling analysis; conceptual ERD Figure 1; Task 2 schema/3NF tables and dependency explanations; Task 3 implementation with SQL extracts and GUI screenshots; Task 4 controlled testing and screenshots; advanced report SQL/output; constraints and security evidence; evaluation and recommendations; conclusions; appendix with SQL code and repository/file organization.
 
-**Required live evidence to capture:** table counts after `03_seed.sql`, `SHOW CREATE TABLE` for Section and Registration, `SHOW GRANTS` for each user, views, successful and failed `CALL RegisterStudent`, mark/status/delete audit entries, login and role-specific tabs, output of `GetSectionPerformanceReport` and the displayed GUI report, and a rollback test. Label each screenshot with figure number, source, and a one-sentence explanation.
+**Required live evidence to capture:** table counts after `03_seed.sql`, `SHOW CREATE TABLE` for Section and Registration, `SHOW GRANTS` for each user, views, successful and failed `CALL RegisterStudent`, mark/status/delete audit entries, login and role-specific menus, output of `GetSectionPerformanceReport` and the displayed GUI report, and a rollback test. Label each screenshot with figure number, source, and a one-sentence explanation.
 
-**Final accuracy note:** This report describes the created source code and **predicted** outcomes, not an executed MySQL verification. Replace the prediction with actual measured results once the local database and GUI are run.
+**Final accuracy note:** This report describes the reviewed source code and **predicted** outcomes, not an executed MySQL verification. Replace the prediction with actual measured results once the local database and GUI are run.
