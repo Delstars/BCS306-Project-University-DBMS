@@ -100,18 +100,19 @@ ALTER TABLE Department MODIFY ChairID INT NOT NULL;
 ALTER TABLE Department ADD CONSTRAINT FK_Department_Chair
     FOREIGN KEY (ChairID,DeptCode)
     REFERENCES Instructor(InstructorID,DeptCode)
-    ON UPDATE RESTRICT ON DELETE RESTRICT;
+    ON DELETE RESTRICT;
 
 -- Baseline counts: 4 departments, 5 instructors, 8 students, 9 phones,
 -- 7 specified courses + 1 labelled supporting course, 4 prerequisites,
 -- 6 sections, 8 synthetic meetings, 8 registrations, 8 creation-audit rows.
-SELECT 'Department' AS Entity,COUNT(*) AS Total FROM Department
-UNION ALL SELECT 'Instructor',COUNT(*) FROM Instructor
-UNION ALL SELECT 'Student',COUNT(*) FROM Student
-UNION ALL SELECT 'StudentPhone',COUNT(*) FROM StudentPhone
-UNION ALL SELECT 'Course',COUNT(*) FROM Course
-UNION ALL SELECT 'CoursePrerequisite',COUNT(*) FROM CoursePrerequisite
-UNION ALL SELECT 'Section',COUNT(*) FROM Section
-UNION ALL SELECT 'SectionMeeting',COUNT(*) FROM SectionMeeting
-UNION ALL SELECT 'Registration',COUNT(*) FROM Registration
-UNION ALL SELECT 'RegistrationAudit',COUNT(*) FROM RegistrationAudit;
+-- Verification uses separate SELECT statements as in Labs 3-5.
+SELECT COUNT(*) AS TotalDepartments FROM Department;
+SELECT COUNT(*) AS TotalInstructors FROM Instructor;
+SELECT COUNT(*) AS TotalStudents FROM Student;
+SELECT COUNT(*) AS TotalPhones FROM StudentPhone;
+SELECT COUNT(*) AS TotalCourses FROM Course;
+SELECT COUNT(*) AS TotalPrerequisites FROM CoursePrerequisite;
+SELECT COUNT(*) AS TotalSections FROM Section;
+SELECT COUNT(*) AS TotalMeetings FROM SectionMeeting;
+SELECT COUNT(*) AS TotalRegistrations FROM Registration;
+SELECT COUNT(*) AS TotalAuditEvents FROM RegistrationAudit;
