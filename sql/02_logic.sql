@@ -91,7 +91,7 @@ END//
 CREATE TRIGGER trg_registration_after_update
 AFTER UPDATE ON Registration FOR EACH ROW
 BEGIN
-    IF NOT(OLD.RegistrationStatus <=> NEW.RegistrationStatus) THEN
+    IF OLD.RegistrationStatus <> NEW.RegistrationStatus THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
            EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
@@ -99,7 +99,9 @@ BEGIN
           NEW.Semester,NEW.AcademicYear,'REGISTRATION_STATUS_CHANGED',
           OLD.RegistrationStatus,NEW.RegistrationStatus,OLD.FinalMark,NEW.FinalMark,USER(),NOW());
     END IF;
-    IF NOT(OLD.FinalMark <=> NEW.FinalMark) THEN
+    IF OLD.FinalMark <> NEW.FinalMark
+       OR (OLD.FinalMark IS NULL AND NEW.FinalMark IS NOT NULL)
+       OR (OLD.FinalMark IS NOT NULL AND NEW.FinalMark IS NULL) THEN
         INSERT INTO RegistrationAudit
           (RegistrationID,StudentID,CourseCode,SectionNo,Semester,AcademicYear,
            EventType,OldStatus,NewStatus,OldFinalMark,NewFinalMark,DatabaseUser,EventTime)
@@ -138,7 +140,7 @@ DELIMITER ;
 
 CREATE VIEW v_StudentDirectory AS
 SELECT s.StudentID, CONCAT(s.FirstName,' ',s.FamilyName) AS StudentName,
-       YEAR(CURDATE()) - YEAR(s.DateOfBirth) - (DATE_FORMAT(CURDATE(),'%m%d') < DATE_FORMAT(s.DateOfBirth,'%m%d')) AS Age,
+       TIMESTAMPDIFF(YEAR,s.DateOfBirth,CURDATE()) AS Age,
        s.Email,s.StudentStatus,s.AdmissionYear,s.DeptCode,d.DeptName,
        s.AdvisorID
 FROM Student s JOIN Department d ON s.DeptCode=d.DeptCode;
@@ -209,7 +211,7 @@ BEGIN
       (StudentID,CourseCode,SectionNo,Semester,AcademicYear,RegistrationDate,RegistrationStatus,FinalMark)
     VALUES (p_student,p_course,p_section,p_semester,p_year,CURDATE(),'Registered',NULL);
     COMMIT;
-    SELECT LAST_INSERT_ID() AS NewRegistrationID;
+    SELECT 'Registration created successfully' AS Message;
 END//
 
 CREATE PROCEDURE ChangeRegistrationStatus(IN p_id INT,IN p_status VARCHAR(20))
@@ -218,13 +220,11 @@ BEGIN
     IF p_status NOT IN ('Registered','Dropped') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Use CompleteRegistration to set Completed';
     END IF;
-    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
-    IF ROW_COUNT()=0 THEN
-        -- ROW_COUNT can be zero if the value is unchanged; check existence.
-        IF NOT EXISTS(SELECT 1 FROM Registration WHERE RegistrationID=p_id) THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
-        END IF;
+    IF NOT EXISTS(SELECT 1 FROM Registration WHERE RegistrationID=p_id) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='Registration not found';
     END IF;
+    UPDATE Registration SET RegistrationStatus=p_status WHERE RegistrationID=p_id;
+    -- The existence check is done before the UPDATE (no ROW_COUNT needed).
 END//
 
 CREATE PROCEDURE SetFinalMark(IN p_id INT,IN p_mark DECIMAL(5,2))
@@ -259,7 +259,7 @@ BEGIN
 END//
 
 -- Lab 6 scalar/correlated subqueries, Lab 5 aggregates, Lab 6 JOIN.
--- No WITH, CROSS JOIN or CASE WHEN.
+-- Uses only joins, comparison subqueries, COUNT/AVG/MIN/MAX/ROUND.
 CREATE PROCEDURE GetSectionPerformanceReport(IN p_semester VARCHAR(15),IN p_year INT)
 SQL SECURITY DEFINER
 BEGIN
