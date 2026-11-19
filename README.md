@@ -68,7 +68,7 @@ Every other added value is marked in `03_seed.sql`. Reset by rerunning the setup
 | `app/main.py` | Tkinter login, tabs, forms, lists, search, reports, and error dialogs |
 | `app/db.py` | `mysql.connector` connection, parameterized SQL, `callproc`, commit/rollback |
 | `app/test_connection.py` | Lab 10-style credential/connection test |
-| `docs/ERD.dot` | Graphviz source for the relational ERD (render with `dot -Tpng docs/ERD.dot -o ERD.png`) |
+| `docs/ERD.md` + `docs/ERD.dot` | GitHub-renderable Mermaid overview and detailed Graphviz source (`dot -Tpng docs/ERD.dot -o ERD.png`) |
 | `docs/PROJECT_TASKS_1_TO_5.md` | Model analysis, 3NF design, implementation, evaluation, and report content |
 | `docs/EXPECTED_BASELINE_REPORT.csv` | **Predicted** report rows computed from seed data (not a captured MySQL output) |
 
