@@ -2,7 +2,7 @@
 -- WARNING: This script RESETS ONLY the dedicated UniversityProject1DB database.
 -- Do not run against an existing database containing work you need to keep.
 DROP DATABASE IF EXISTS UniversityProject1DB;
-CREATE DATABASE UniversityProject1DB CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE UniversityProject1DB;
 USE UniversityProject1DB;
 
 -- ChairID FK is added after initial data is loaded because of the circular
@@ -12,7 +12,7 @@ CREATE TABLE Department (
     DeptName VARCHAR(100) NOT NULL UNIQUE,
     Office VARCHAR(30) NOT NULL,
     ChairID INT UNIQUE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Instructor (
     InstructorID INT PRIMARY KEY,
@@ -26,7 +26,7 @@ CREATE TABLE Instructor (
     CONSTRAINT UQ_Instructor_Dept UNIQUE (InstructorID, DeptCode),
     CONSTRAINT FK_Instructor_Department FOREIGN KEY (DeptCode)
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Student (
     StudentID INT PRIMARY KEY,
@@ -35,7 +35,7 @@ CREATE TABLE Student (
     FamilyName VARCHAR(50) NOT NULL,
     DateOfBirth DATE NOT NULL,
     Email VARCHAR(120) NOT NULL UNIQUE,
-    AdmissionYear SMALLINT NOT NULL,
+    AdmissionYear INT NOT NULL,
     StudentStatus VARCHAR(20) NOT NULL DEFAULT 'Active',
     Street VARCHAR(100),
     City VARCHAR(60),
@@ -49,7 +49,7 @@ CREATE TABLE Student (
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT FK_Student_Advisor FOREIGN KEY (AdvisorID)
         REFERENCES Instructor(InstructorID) ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE StudentPhone (
     StudentID INT NOT NULL,
@@ -57,13 +57,13 @@ CREATE TABLE StudentPhone (
     CONSTRAINT PK_StudentPhone PRIMARY KEY (StudentID, PhoneNumber),
     CONSTRAINT FK_StudentPhone_Student FOREIGN KEY (StudentID)
         REFERENCES Student(StudentID) ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Course (
     CourseCode VARCHAR(10) PRIMARY KEY,
     CourseTitle VARCHAR(150) NOT NULL,
-    Credits TINYINT NOT NULL,
-    AcademicLevel TINYINT NOT NULL,
+    Credits INT NOT NULL,
+    AcademicLevel INT NOT NULL,
     CourseStatus VARCHAR(20) NOT NULL DEFAULT 'Active',
     DeptCode VARCHAR(10) NOT NULL,
     CONSTRAINT CHK_Course_Credits CHECK (Credits BETWEEN 1 AND 6),
@@ -71,7 +71,7 @@ CREATE TABLE Course (
     CONSTRAINT CHK_Course_Status CHECK (CourseStatus IN ('Active', 'Inactive')),
     CONSTRAINT FK_Course_Department FOREIGN KEY (DeptCode)
         REFERENCES Department(DeptCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE CoursePrerequisite (
     CourseCode VARCHAR(10) NOT NULL,
@@ -81,13 +81,13 @@ CREATE TABLE CoursePrerequisite (
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT FK_Prereq_Required FOREIGN KEY (PrerequisiteCourseCode)
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Section (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     MaximumCapacity INT NOT NULL,
     Classroom VARCHAR(30) NOT NULL,
     DeliveryMode VARCHAR(30) NOT NULL,
@@ -100,14 +100,14 @@ CREATE TABLE Section (
         REFERENCES Course(CourseCode) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT FK_Section_Instructor FOREIGN KEY (InstructorID)
         REFERENCES Instructor(InstructorID) ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 -- MeetingNo is meaningful only within its parent Section (weak entity).
 CREATE TABLE SectionMeeting (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     MeetingNo INT NOT NULL,
     DayOfWeek VARCHAR(12) NOT NULL,
     StartTime TIME NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE SectionMeeting (
         (CourseCode, SectionNo, Semester, AcademicYear)
         REFERENCES Section(CourseCode, SectionNo, Semester, AcademicYear)
         ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB;
+);
 
 CREATE TABLE Registration (
     RegistrationID INT AUTO_INCREMENT PRIMARY KEY,
@@ -130,8 +130,8 @@ CREATE TABLE Registration (
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
-    RegistrationDate DATE NOT NULL DEFAULT (CURRENT_DATE),
+    AcademicYear INT NOT NULL,
+    RegistrationDate DATE NOT NULL,
     RegistrationStatus VARCHAR(20) NOT NULL DEFAULT 'Registered',
     FinalMark DECIMAL(5,2) NULL,
     CONSTRAINT UQ_Registration_StudentSection UNIQUE
@@ -147,28 +147,28 @@ CREATE TABLE Registration (
         (CourseCode, SectionNo, Semester, AcademicYear)
         REFERENCES Section(CourseCode, SectionNo, Semester, AcademicYear)
         ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB;
+);
 
 -- Keep a historical snapshot; intentionally NO FK to Registration, since
 -- registration deletion must not delete its audit history.
 CREATE TABLE RegistrationAudit (
-    AuditID BIGINT AUTO_INCREMENT PRIMARY KEY,
+    AuditID INT AUTO_INCREMENT PRIMARY KEY,
     RegistrationID INT NOT NULL,
     StudentID INT NOT NULL,
     CourseCode VARCHAR(10) NOT NULL,
     SectionNo VARCHAR(5) NOT NULL,
     Semester VARCHAR(15) NOT NULL,
-    AcademicYear SMALLINT NOT NULL,
+    AcademicYear INT NOT NULL,
     EventType VARCHAR(40) NOT NULL,
     OldStatus VARCHAR(20),
     NewStatus VARCHAR(20),
     OldFinalMark DECIMAL(5,2),
     NewFinalMark DECIMAL(5,2),
     DatabaseUser VARCHAR(288) NOT NULL,
-    EventTime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    EventTime DATETIME NOT NULL,
     CONSTRAINT CHK_Audit_Event CHECK (EventType IN (
         'REGISTRATION_CREATED', 'REGISTRATION_STATUS_CHANGED',
         'FINAL_MARK_CHANGED', 'REGISTRATION_DELETED'))
-) ENGINE=InnoDB;
+);
 
 SHOW TABLES;
