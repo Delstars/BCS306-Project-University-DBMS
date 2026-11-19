@@ -6,7 +6,7 @@ SELECT StudentID,StudentName,Age,DeptName,StudentStatus
 FROM v_StudentDirectory ORDER BY DeptName,StudentName;
 
 -- More than one phone number (GROUP BY / HAVING).
-SELECT s.StudentID,CONCAT_WS(' ',s.FirstName,s.FamilyName) AS StudentName,
+SELECT s.StudentID,CONCAT(s.FirstName,' ',s.FamilyName) AS StudentName,
        COUNT(p.PhoneNumber) AS PhoneCount
 FROM Student s JOIN StudentPhone p ON s.StudentID=p.StudentID
 GROUP BY s.StudentID,s.FirstName,s.FamilyName HAVING COUNT(p.PhoneNumber)>1;
