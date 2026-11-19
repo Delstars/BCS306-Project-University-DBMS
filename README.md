@@ -5,7 +5,7 @@ A complete **MySQL 8 + Python 3/Tkinter** classroom implementation based on the 
 
 ## GitHub publishing
 
-The repository can be made public. See **[PUBLISH_TO_GITHUB.md](PUBLISH_TO_GITHUB.md)** for the GitHub creation and first-push instructions. The `.gitignore` prevents publishing local virtual environments, secret configuration files, and temporary data. The MySQL usernames/passwords in these scripts are **deliberately public classroom demonstration credentials**; do not reuse them outside a locally isolated course database.
+The repository can be made public. See **[PUBLISH_TO_GITHUB.md](PUBLISH_TO_GITHUB.md)** for the GitHub creation and first-push instructions. The `.gitignore` prevents publishing local virtual environments, secret configuration files, and temporary data. The public SQL scripts use **password placeholders**, not working passwords. Replace each `CHANGE_ME_*` value with a strong password before executing SQL account creation.
 
 ## Quick start (Windows + MySQL Workbench + Visual Studio / Python)
 
@@ -27,15 +27,15 @@ The repository can be made public. See **[PUBLISH_TO_GITHUB.md](PUBLISH_TO_GITHU
 
 | MySQL username | Demo password (change on a shared server) | Allowed functions |
 |---|---|---|
-| `p1_registrar` | `Registrar@2026!` | Student/section management, registration and approved mark updates, audits, report |
-| `p1_officer` | `Officer@2026!` | Student management, phone numbers, controlled registrations and status updates |
-| `p1_report` | `Report@2026!` | Approved registration/capacity views and advanced report only |
+| `p1_registrar` | `CHANGE_ME_REGISTRAR` | Student/section management, registration and approved mark updates, audits, report |
+| `p1_officer` | `CHANGE_ME_OFFICER` | Student management, phone numbers, controlled registrations and status updates |
+| `p1_report` | `CHANGE_ME_REPORT` | Approved registration/capacity views and advanced report only |
 
-**Security note:** These are intentionally visible **throwaway classroom passwords** created by `04_security.sql`. Change them with MySQL `ALTER USER` before using a shared server. The app's tab visibility is for usability; **MySQL GRANT/REVOKE permissions** are the true security boundary.
+**Security note:** These values are **placeholders**, not actual account passwords. Choose replacements and use those same passwords on the GUI login screen. The app's tab visibility is for usability; **MySQL GRANT/REVOKE permissions** are the true security boundary.
 
 ## Alternative: run separate SQL files in order
 
-The single setup file is built from the first five scripts:
+The single setup file is built from the first five scripts. **Before running either setup method, replace `CHANGE_ME_REGISTRAR`, `CHANGE_ME_OFFICER`, and `CHANGE_ME_REPORT` in the setup/security SQL with passwords of your choosing.**
 
 1. `01_schema.sql` — creates the normalized tables, keys, and constraints; **drops and recreates only `UniversityProject1DB`**.
 2. `02_logic.sql` — creates five audit/validation triggers on Registration, one capacity trigger on Section, three views, and five stored procedures.
@@ -68,7 +68,7 @@ Every other added value is marked in `03_seed.sql`. Reset by rerunning the setup
 | `app/main.py` | Tkinter login, tabs, forms, lists, search, reports, and error dialogs |
 | `app/db.py` | `mysql.connector` connection, parameterized SQL, `callproc`, commit/rollback |
 | `app/test_connection.py` | Lab 10-style credential/connection test |
-| `docs/ERD.svg` + `.png` | Relational ERD illustrating PKs, FKs, and cardinalities |
+| `docs/ERD.dot` | Graphviz source for the relational ERD (render with `dot -Tpng docs/ERD.dot -o ERD.png`) |
 | `docs/PROJECT_TASKS_1_TO_5.md` | Model analysis, 3NF design, implementation, evaluation, and report content |
 | `docs/EXPECTED_BASELINE_REPORT.csv` | **Predicted** report rows computed from seed data (not a captured MySQL output) |
 
@@ -103,4 +103,4 @@ For marking, rerun a fresh setup, take screenshot evidence **before modifying da
 
 ## What has and has not been verified here
 
-The Python files have passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD files render. **No MySQL Server was available in the creation environment**, so the scripts and desktop GUI have **not been executed against a live MySQL instance**. Follow the provided local setup and capture actual Workbench and GUI test evidence for submission.
+The Python files have passed **syntax compilation**, the original seed rows have been cross-checked against the supplied document, and the ERD source is provided as Graphviz DOT. **No MySQL Server was available in the creation environment**, so the scripts and desktop GUI have **not been executed against a live MySQL instance**. Follow the provided local setup and capture actual Workbench and GUI test evidence for submission.
