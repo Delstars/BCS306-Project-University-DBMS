@@ -3,9 +3,17 @@
 A complete **MySQL 8 + Python 3/Tkinter** classroom implementation based on the **Project 1** scenario in `BCS306_All_Projects.docx` and the approaches demonstrated in the **supplied Labs 1–7 and 9–10**. **Lab 8 was not included among the uploaded files.**
 
 
+## Official implementation and alternative proposal
+
+The team's maintained implementation is **`UniversityProject1DB`**, installed with [`sql/ALL_IN_ONE_SETUP.sql`](sql/ALL_IN_ONE_SETUP.sql) (or the numbered scripts `01` through `05`). The existing [Tkinter application](app/main.py), tests, and design documentation target this implementation.
+
+[`sql/BCS306_Project1_Simple_Updated.sql`](sql/BCS306_Project1_Simple_Updated.sql) is a separate group-member proposal retained for reference. It creates a different database, `bcs306_university`, and is not part of the supported setup. Do not run it as a replacement for the official scripts or mix its objects or accounts with them. Its embedded classroom passwords are public examples and should not be reused.
+
+Continue development and testing against the official implementation unless the team explicitly decides otherwise.
+
 ## GitHub publishing
 
-This repository is public and already contains the project code. The `.gitignore` excludes virtual environments, secret configuration files, and temporary data. The public SQL scripts use **password placeholders**, not working passwords. Replace each `CHANGE_ME_*` value with a strong password before executing SQL account creation.
+This repository is public and already contains the project code. The `.gitignore` excludes virtual environments, secret configuration files, and temporary data. The official setup SQL scripts use **password placeholders**, not working passwords. Replace each `CHANGE_ME_*` value with a strong password before executing SQL account creation.
 
 ## Quick start (Windows + MySQL Workbench + Visual Studio / Python)
 
